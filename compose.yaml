@@ -1,6 +1,9 @@
 services:
   client:
-    image: "client-image:latest"
+    image: ghcr.io/panos61/client:dev
+    networks:
+      - external
+    env_file: .env
     environment:
       VITE_API_URL: ${VITE_API_URL}
       VITE_WS_URL: ${VITE_WS_URL}
@@ -8,7 +11,11 @@ services:
     restart: unless-stopped
     
   server:
-    image: "server-image:latest"
+    image: ghcr.io/panos61/server:dev
+    networks:
+      - external
+      - internal
+    env_file: .env
     environment:
       JWT_SECRET: ${JWT_SECRET}
       REDIS_URL: ${REDIS_URL}
@@ -23,14 +30,23 @@ services:
     
   redis: 
     image: redis:8.4-alpine
+    networks:
+      - internal
     volumes: [redis-data:/data]
     restart: unless-stopped
   
   rabbitmq:
     image: rabbitmq:4.2-alpine
+    networks:
+      - internal
     volumes: [rabbitmq-data:/var/lib/rabbitmq]
     restart: unless-stopped
 
+networks:
+  external:
+  internal:
+    internal: true
+    
 volumes:
   redis-data:
   rabbitmq-data:
