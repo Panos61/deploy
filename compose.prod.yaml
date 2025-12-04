@@ -1,0 +1,58 @@
+services:
+  client:
+    image: ghcr.io/panos61/client:prod
+    ports:
+      - "80:80"
+    networks:
+      - external
+    env_file: .env
+    environment:
+      VITE_API_URL: ${VITE_API_URL}
+      VITE_WS_URL: ${VITE_WS_URL}
+      VITE_LIVEKIT_CLOUD_URL: ${VITE_LIVEKIT_CLOUD_URL}
+    restart: unless-stopped
+    
+  server:
+    image: ghcr.io/panos61/server:prod
+    ports:
+      - "8080:8080"
+    networks:
+      - external
+      - internal
+    env_file: .env
+    volumes:
+       - .env:/app/.env:ro
+    environment:
+      JWT_SECRET: ${JWT_SECRET}
+      REDIS_URL: ${REDIS_URL}
+      RMQ_URL: ${RMQ_URL}
+      LIVEKIT_URL: ${LIVEKIT_URL}
+      LIVEKIT_API_KEY: ${LIVEKIT_API_KEY}
+      LIVEKIT_API_SECRET: ${LIVEKIT_API_SECRET}
+    depends_on:
+      - redis
+      - rabbitmq
+    restart: unless-stopped
+    
+  redis: 
+    image: redis:8.4-alpine
+    networks:
+      - internal
+    volumes: [redis-data:/data]
+    restart: unless-stopped
+  
+  rabbitmq:
+    image: rabbitmq:4.2-alpine
+    networks:
+      - internal
+    volumes: [rabbitmq-data:/var/lib/rabbitmq]
+    restart: unless-stopped
+
+networks:
+  external:
+  internal:
+    internal: true
+    
+volumes:
+  redis-data:
+  rabbitmq-data:
