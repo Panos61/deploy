@@ -3,7 +3,7 @@ services:
     image: ghcr.io/panos61/client:dev
     networks:
       - external
-    env_file: .env
+    env_file: .env.dev
     environment:
       VITE_API_URL: ${VITE_API_URL}
       VITE_WS_URL: ${VITE_WS_URL}
@@ -15,7 +15,7 @@ services:
     networks:
       - external
       - internal
-    env_file: .env
+    env_file: .env.dev
     environment:
       JWT_SECRET: ${JWT_SECRET}
       REDIS_URL: ${REDIS_URL}

@@ -5,7 +5,7 @@ services:
       - "80:80"
     networks:
       - external
-    env_file: .env
+    env_file: .env.prod
     environment:
       VITE_API_URL: ${VITE_API_URL}
       VITE_WS_URL: ${VITE_WS_URL}
@@ -19,7 +19,7 @@ services:
     networks:
       - external
       - internal
-    env_file: .env
+    env_file: .env.prod
     volumes:
        - .env:/app/.env:ro
     environment:
