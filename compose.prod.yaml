@@ -1,58 +1,98 @@
 services:
-  client:
-    image: ghcr.io/panos61/client:prod
+  traefik:
+    image: traefik:v3.6.4
+    container_name: traefik
+    restart: unless-stopped
+    security_opt:
+      - no-new-privileges:true
     ports:
       - "80:80"
+      - "443:443"
+    command:
+      # Providers
+      - --providers.docker=true
+      - --providers.docker.exposedbydefault=false
+
+      # Entrypoints
+      - --entrypoints.web.address=:80
+      - --entrypoints.web.http.redirections.entrypoint.to=websecure
+      - --entrypoints.web.http.redirections.entrypoint.scheme=https
+      - --entrypoints.websecure.address=:443
+
+      # Let's Encrypt (ACME)
+      - --certificatesresolvers.le.acme.email=${LE_EMAIL}
+      - --certificatesresolvers.le.acme.storage=/letsencrypt/acme.json
+      - --certificatesresolvers.le.acme.httpchallenge=true
+      - --certificatesresolvers.le.acme.httpchallenge.entrypoint=web
+
+      # Dashboard (optional)
+      - --api.dashboard=true
+      - --api.insecure=false
+
+      # Logs
+      - --log.level=INFO
+      - --accesslog=true
+
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+      - letsencrypt:/letsencrypt
     networks:
       - external
-    env_file: .env.prod
-    environment:
-      VITE_API_URL: ${VITE_API_URL}
-      VITE_WS_URL: ${VITE_WS_URL}
-      VITE_LIVEKIT_CLOUD_URL: ${VITE_LIVEKIT_CLOUD_URL}
+
+  client:
+    image: ghcr.io/panos61/client:prod
+    networks:
+      - external
+    labels:
+      - traefik.enable=true
+      - traefik.http.routers.client.rule=Host(`${CLIENT_HOST}`)
+      - traefik.http.routers.client.entrypoints=websecure
+      - traefik.http.routers.client.tls.certresolver=le
+      - traefik.http.services.client.loadbalancer.server.port=80
     restart: unless-stopped
-    
+
   server:
     image: ghcr.io/panos61/server:prod
-    ports:
-      - "8080:8080"
     networks:
       - external
       - internal
     env_file: .env.prod
-    volumes:
-       - .env:/app/.env:ro
-    environment:
-      JWT_SECRET: ${JWT_SECRET}
-      REDIS_URL: ${REDIS_URL}
-      RMQ_URL: ${RMQ_URL}
-      LIVEKIT_URL: ${LIVEKIT_URL}
-      LIVEKIT_API_KEY: ${LIVEKIT_API_KEY}
-      LIVEKIT_API_SECRET: ${LIVEKIT_API_SECRET}
+    # TEMP only if your Go app crashes without /app/.env:
+    # volumes:
+    #   - ./.env.prod:/app/.env:ro
+    labels:
+      - traefik.enable=true
+      - traefik.http.routers.api.rule=Host(`${API_HOST}`)
+      - traefik.http.routers.api.entrypoints=websecure
+      - traefik.http.routers.api.tls.certresolver=le
+      - traefik.http.services.api.loadbalancer.server.port=8080
     depends_on:
       - redis
       - rabbitmq
     restart: unless-stopped
-    
-  redis: 
+
+  redis:
     image: redis:8.4-alpine
     networks:
       - internal
-    volumes: [redis-data:/data]
+    volumes:
+      - redis-data:/data
     restart: unless-stopped
-  
+
   rabbitmq:
     image: rabbitmq:4.2-alpine
     networks:
       - internal
-    volumes: [rabbitmq-data:/var/lib/rabbitmq]
+    volumes:
+      - rabbitmq-data:/var/lib/rabbitmq
     restart: unless-stopped
 
 networks:
   external:
   internal:
     internal: true
-    
+
 volumes:
   redis-data:
   rabbitmq-data:
+  letsencrypt:
