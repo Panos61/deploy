@@ -58,9 +58,8 @@ services:
       - external
       - internal
     env_file: .env.prod
-    # TEMP only if your Go app crashes without /app/.env:
-    # volumes:
-    #   - ./.env.prod:/app/.env:ro
+    volumes:
+      - ./.env.prod:/app/.env:ro
     labels:
       - traefik.enable=true
       - traefik.http.routers.api.rule=Host(`${API_HOST}`)
