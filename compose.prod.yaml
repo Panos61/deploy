@@ -41,6 +41,7 @@ services:
 
   client:
     image: ghcr.io/panos61/client:prod
+    env_file: .env.prod
     networks:
       - external
     labels:
