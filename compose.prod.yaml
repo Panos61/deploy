@@ -66,6 +66,9 @@ services:
       - traefik.http.routers.api.entrypoints=websecure
       - traefik.http.routers.api.tls.certresolver=le
       - traefik.http.services.api.loadbalancer.server.port=8080
+      - traefik.http.routers.api.middlewares=cors-headers
+      - traefik.http.middlewares.cors-headers.headers.accesscontrolalloworiginlist=${CLIENT_HOST}
+      - traefik.http.middlewares.cors-headers.headers.accesscontrolallowcredentials=true
     depends_on:
       - redis
       - rabbitmq
